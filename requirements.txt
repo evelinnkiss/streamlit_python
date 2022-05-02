@@ -92,3 +92,4 @@ wcwidth
 webencodings
 widgetsnbextension
 zipp
+cargo

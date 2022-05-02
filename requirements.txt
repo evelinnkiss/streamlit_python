@@ -66,7 +66,6 @@ pyrsistent
 python-dateutil
 pytz
 pytz-deprecation-shim
-pywin32==303
 pywinpty
 pyzmq
 requests

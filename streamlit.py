@@ -4,7 +4,7 @@ import pymysql
 import pandas as pd
 import altair as alt
 
-page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distance between stations','Duration of the loan'])
+page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations'])
 if page == 'Active-NonActive stations':
     st.title('Active-NonActive stations')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
@@ -107,7 +107,7 @@ elif page == 'The Most frequent stations':
 
     """
     df = pd.read_sql(sql=query2,con=engeto_data_conn)
-    st.dateframe(df, use_container_width=True)
+    st.dataframe(df,1000,300)
 
     
     chart1=alt.Chart(df).mark_bar().encode(
@@ -193,10 +193,40 @@ elif page == 'Count of Bikes':
 
 
 
-elif page == 'Distance between stations':
-    st.title('Distance between stations')
+elif page == 'Distances between stations':
+    st.title('Distances between stations')
+    
+    from itertools import combinations
+    from geopy.distance import geodesic
+    import numpy as np
+
+  
+    student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
+    engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
+    query="""
+        SELECT DISTINCT end_station_id  AS id, end_station_name  AS station_name,
+        AVG(end_station_latitude) AS lat, 
+        AVG(end_station_longitude) AS lng 
+        FROM edinburgh_bikes eb
+        GROUP BY end_station_id 
+        ORDER BY id
+    """
+    df = pd.read_sql(sql=query,con=engeto_data_conn)
+    df = df.set_index('id')
 
     
+    @np.vectorize
+    def geodesic_vec(lat1, lon1, lat2, lon2):
+        rs = geodesic( (lat1, lon1), (lat2, lon2) ).kilometers
+        return rs
+    coords = np.array(list(combinations(df[['lat', 'lng']].values, 2)))
+    coords = coords.reshape(coords.shape[0], 4)
+    distances = geodesic_vec(coords[:, 0], coords[:, 1], coords[:, 2], coords[:, 3])
+    combos = list(combinations(df.index, 2))
+    dist_df = pd.DataFrame(distances, index=pd.Index(combos, names=['station1', 'station2']), columns=['distance'])
+    dist_df = dist_df.join(df.rename_axis('station1')).join(df.rename_axis('station2'), rsuffix='2')
+    dist_df
+    
 
-elif page == 'Duration of the loan':
-    st.title('Duration of the loan')
+
+

@@ -185,7 +185,7 @@ elif page == 'Count of Bikes':
    
 
     chart2=alt.Chart(df).mark_bar().encode(
-        x=alt.X('Station_name',sort='y'),
+        x=alt.X('Station_name',sort='-y'),
         y='CountOfUse'
     ).interactive()
 

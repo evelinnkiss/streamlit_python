@@ -4,7 +4,7 @@ import pymysql
 import pandas as pd
 import altair as alt
 
-page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations'])
+page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations','Bike rental time','Bike rent over time'])
 if page == 'Active-NonActive stations':
     st.title('Active-NonActive stations')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
@@ -113,7 +113,11 @@ elif page == 'The Most frequent stations':
     chart1=alt.Chart(df).mark_bar().encode(
         x='Station_name',
         y='CountOfUse'
-    ).interactive()
+    ).configure_axis(
+        labelFontSize=14,
+        titleFontSize=16,
+        labelAngle=0
+   ).interactive()
 
     st.altair_chart(chart1, use_container_width=True)
 
@@ -174,6 +178,7 @@ elif page == 'Count of Bikes':
         ) SELECT start_station_name AS Station_name, (countEndStation - countStartStation ) AS CountOfUse
         FROM Bikes 
         WHERE (countEndStation - countStartStation ) > 0
+        ORDER BY CountOfUse DESC
     """
     
     df = pd.read_sql(sql=query1,con=engeto_data_conn)
@@ -229,4 +234,62 @@ elif page == 'Distances between stations':
     
 
 
+elif page == 'Bike rental time':
+    st.title('Bike rental time')
 
+    student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
+    engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
+
+    query="""
+        WITH duration AS (
+        SELECT start_station_name,end_station_name, ROUND(duration/60,0) AS duration_min, CASE 
+            WHEN ROUND(duration/60,0) <=10 THEN '<=10min'
+            WHEN ROUND(duration/60,0) >10 AND ROUND(duration/60,0) <=30 THEN '<=30min'
+            WHEN ROUND(duration/60,0) >30 AND  ROUND(duration/60,0) <=60 THEN '<=60min_AND_>30min'
+            WHEN ROUND(duration/60,0) >60 THEN '>60min'
+        END AS duration_type
+        FROM edinburgh_bikes eb 
+        )SELECT duration_type,COUNT(duration_type) as count
+        FROM duration
+        GROUP BY duration_type 
+    """
+    df = pd.read_sql(sql=query,con=engeto_data_conn)
+
+
+    hist = alt.Chart(df).mark_bar().encode(
+        x = alt.X('duration_type'),
+        y = alt.Y('count')
+    ).configure_axis(
+        labelFontSize=14,
+        titleFontSize=16,
+        labelAngle=0
+   ).interactive()
+
+    st.altair_chart(hist, use_container_width=True)
+
+elif page == 'Bike rent over time':
+    st.title('Development of Bike rent over time')
+    
+    
+    student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
+    engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
+
+    query="""
+        WITH rent_time AS (
+            SELECT LEFT(RIGHT(started_at,8),2) AS time , start_station_name  FROM edinburgh_bikes  
+        ) SELECT time, COUNT(start_station_name) as countOfRents
+        from rent_time  
+        group by time 
+    """
+    df = pd.read_sql(sql=query,con=engeto_data_conn)
+
+    hist = alt.Chart(df).mark_bar().encode(
+        x = alt.X('time'),
+        y = alt.Y('countOfRents')
+    ).configure_axis(
+        labelFontSize=14,
+        titleFontSize=16,
+        labelAngle=0
+    ).interactive()
+
+    st.altair_chart(hist, use_container_width=True)

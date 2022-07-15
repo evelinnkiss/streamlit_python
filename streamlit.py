@@ -1,5 +1,4 @@
 from email.quoprimime import body_length
-from tkinter.font import BOLD
 import streamlit as st
 import sqlalchemy
 import pymysql

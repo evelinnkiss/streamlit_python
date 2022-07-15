@@ -1,10 +1,14 @@
+from email.quoprimime import body_length
+from tkinter.font import BOLD
 import streamlit as st
 import sqlalchemy
 import pymysql
 import pandas as pd
 import altair as alt
 
-page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations','Bike rental time','Bike rent over time'])
+
+st.set_page_config(layout="wide")
+page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations','Bike rental time','Demand analysis'])
 if page == 'Active-NonActive stations':
     st.title('Active-NonActive stations')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
@@ -35,9 +39,10 @@ if page == 'Active-NonActive stations':
    
    
 
-    chart1=alt.Chart(df).mark_bar().encode(
-        x=alt.X('Station_name',sort='y'),
-        y='CountOfUse'
+    chart1 = alt.Chart(df).mark_bar().encode(
+        x = alt.X('Station_name',sort='y'),
+        y = 'CountOfUse',
+        tooltip = [ 'Station_name','CountOfUse' ]
     ).interactive()
 
     st.subheader ('NonActive')
@@ -70,9 +75,10 @@ if page == 'Active-NonActive stations':
     df = pd.read_sql(sql=query1,con=engeto_data_conn)
    
 
-    chart2=alt.Chart(df).mark_bar().encode(
-        x=alt.X('Station_name',sort='-y'),
-        y='CountOfUse'
+    chart2 = alt.Chart(df).mark_bar().encode(
+        x = alt.X('Station_name',sort='-y'),
+        y = 'CountOfUse',
+        tooltip = [ 'Station_name','CountOfUse' ]
     ).interactive()
     
     st.subheader('Active')
@@ -106,20 +112,22 @@ elif page == 'The Most frequent stations':
         ) SELECT start_station_name AS Station_name, (countStartStation + countEndStation ) AS CountOfUse FROM Bikes LIMIT 10
 
     """
+    col1,col2 = st.columns([0.25,0.75])
     df = pd.read_sql(sql=query2,con=engeto_data_conn)
-    st.dataframe(df,1000,300)
+    col1.dataframe(df,1000,300)
 
     
-    chart1=alt.Chart(df).mark_bar().encode(
-        x='Station_name',
-        y='CountOfUse'
+    chart1 = alt.Chart(df).mark_bar().encode(
+        x = 'Station_name',
+        y = 'CountOfUse',
+        tooltip = [ 'Station_name','CountOfUse' ]
     ).configure_axis(
         labelFontSize=14,
         titleFontSize=16,
         labelAngle=0
    ).interactive()
 
-    st.altair_chart(chart1, use_container_width=True)
+    col2.altair_chart(chart1, use_container_width=True)
 
 elif page == 'Count of Bikes':
     st.title('Count of Bikes at stations')
@@ -144,15 +152,18 @@ elif page == 'Count of Bikes':
             ORDER BY countStartStation 
         ) SELECT start_station_name AS Station_name, (countEndStation - countStartStation ) AS CountOfUse
         FROM Bikes 
-        WHERE (countEndStation - countStartStation ) < 0
+        WHERE (countEndStation - countStartStation ) < (-1000)
+        ORDER BY CountOfUse 
+        
     """
     
     df = pd.read_sql(sql=query,con=engeto_data_conn)
    
 
-    chart1=alt.Chart(df).mark_bar().encode(
-        x=alt.X('Station_name',sort='y'),
-        y='CountOfUse'
+    chart1 = alt.Chart(df).mark_bar().encode(
+        x = alt.X('Station_name',sort='y'),
+        y = 'CountOfUse',
+        tooltip = [ 'Station_name','CountOfUse' ]
     ).interactive()
 
     st.subheader ('Potentionally missing bikes')
@@ -177,16 +188,17 @@ elif page == 'Count of Bikes':
             ORDER BY countStartStation 
         ) SELECT start_station_name AS Station_name, (countEndStation - countStartStation ) AS CountOfUse
         FROM Bikes 
-        WHERE (countEndStation - countStartStation ) > 0
+        WHERE (countEndStation - countStartStation ) > 1000
         ORDER BY CountOfUse DESC
     """
     
     df = pd.read_sql(sql=query1,con=engeto_data_conn)
    
 
-    chart2=alt.Chart(df).mark_bar().encode(
-        x=alt.X('Station_name',sort='-y'),
-        y='CountOfUse'
+    chart2 = alt.Chart(df).mark_bar().encode(
+        x = alt.X('Station_name',sort='-y'),
+        y = 'CountOfUse',
+        tooltip = [ 'Station_name','CountOfUse' ]
     ).interactive()
 
     st.subheader ('Stations with too many bikes')
@@ -258,7 +270,8 @@ elif page == 'Bike rental time':
 
     hist = alt.Chart(df).mark_bar().encode(
         x = alt.X('duration_type'),
-        y = alt.Y('count')
+        y = alt.Y('count'),
+        tooltip = [ 'duration_type','count' ]
     ).configure_axis(
         labelFontSize=14,
         titleFontSize=16,
@@ -267,7 +280,7 @@ elif page == 'Bike rental time':
 
     st.altair_chart(hist, use_container_width=True)
 
-elif page == 'Bike rent over time':
+elif page == 'Demand analysis':
     st.title('Development of Bike rent over time')
     
     
@@ -285,11 +298,161 @@ elif page == 'Bike rent over time':
 
     hist = alt.Chart(df).mark_bar().encode(
         x = alt.X('time'),
-        y = alt.Y('countOfRents')
+        y = alt.Y('countOfRents'),
+        tooltip = [ 'time','countOfRents' ]
     ).configure_axis(
         labelFontSize=14,
         titleFontSize=16,
         labelAngle=0
     ).interactive()
+    
 
+    st.write('The most frequent time is from 12:00 to 17:00 during the DAY')
+    st.write('The lowest frequent time is from 23:00 to 06:00 during the NIGHT and EARLY MORNING')
     st.altair_chart(hist, use_container_width=True)
+
+    col1,col2 =st.columns(2)
+    with col1:
+        st.title('Bike rent during the WORKING DAYS')
+        
+
+        queryWork="""
+                WITH workingdays AS (
+                    SELECT WEEKDAY(started_at) AS dayInWeek,started_at 
+                    FROM edinburgh_bikes eb 
+                    WHERE WEEKDAY(started_at) IN ('0','1','2','3','4')
+                ) SELECT count(dayInWeek)/5 as Average_Count FROM workingdays 
+            """
+        dfWork = pd.read_sql(sql=queryWork,con=engeto_data_conn)
+        dfWork = pd.DataFrame(dfWork)
+
+        a1 = dfWork.to_string(header=False, index=False)
+
+        st.write('Average count of rent per day during the working days:', a1)
+        
+        
+
+
+    with col2:
+        st.title('Bike rent during the WEEKEND')
+        
+
+        queryWeek="""
+        WITH weekend AS (
+            SELECT WEEKDAY(started_at) AS dayInWeek,started_at  
+            FROM edinburgh_bikes eb 
+            WHERE WEEKDAY(started_at) IN ('5','6')
+        ) SELECT count(dayInWeek)/2 AS Average_Count FROM weekend
+        """
+        dfWeek = pd.read_sql(sql=queryWeek,con=engeto_data_conn)
+        dfWeek = pd.DataFrame(dfWeek)
+
+        a2 = dfWeek.to_string(header=False, index=False)
+        st.write('Average count of rent per day during the weekend:', a2)
+
+    st.markdown("<h3 style='text-align: center; color: grey;'>People usually use bikes during the weekend, people use bikes 8 874,7 more then during the working days</h3>", unsafe_allow_html=True)
+    col1,col2 =st.columns(2)
+    with col1:
+        st.title('Effect of weather on bike rent in SUMMER')
+
+        querySummer="""
+            WITH  feels_temperature AS (
+
+                SELECT distinct AVG(feels) as feel_temperature,date
+                FROM edinburgh_weather ew 
+                WHERE time in ('15:00','18:00')
+                GROUP BY date
+                
+            ),
+            countOfBikes AS (
+
+                SELECT LEFT(started_at,10) AS date ,SUBSTRING(started_at,12,2) AS time FROM edinburgh_bikes eb 
+                WHERE LEFT(RIGHT(started_at,8),2) IN ('15','16','17')
+                
+            ), temp_bikes AS (
+
+                SELECT COUNT(time) AS CountOfBikes, b.date, t.feel_temperature, 
+                CASE
+                    WHEN feel_temperature <=12 THEN 'cold <= 12 °c'
+                    WHEN feel_temperature <=22 AND feel_temperature > 12 THEN 'warm > 12 °c'
+                    WHEN feel_temperature >22 THEN 'hot > 22 °c'
+                END AS temperature_group 
+                FROM countOfBikes b
+                JOIN feels_temperature t
+                ON b.date=t.date
+                WHERE SUBSTRING(t.date,6,2) IN ('06','07','08')
+                GROUP BY date
+                
+            ) select AVG(CountOfBikes) as AVG_CountOfBikes, temperature_group  from temp_bikes 
+            group by temperature_group 
+        """
+
+        df = pd.read_sql(sql=querySummer,con=engeto_data_conn)
+
+
+        hist = alt.Chart(df).mark_bar().encode(
+            x = alt.X('temperature_group'),
+            y = alt.Y('AVG_CountOfBikes'),
+            tooltip = [ 'temperature_group', 'AVG_CountOfBikes' ]
+        ).configure_axis(
+            labelFontSize=14,
+            titleFontSize=16,
+            labelAngle=0
+        ).interactive()
+
+        st.altair_chart(hist, use_container_width=True)
+
+    with col2:
+        st.title('Effect of weather on bike rent in WINTER')
+
+        queryWinter="""
+            WITH  feels_temperature AS (
+
+                SELECT distinct AVG(feels) AS feel_temperature,date
+                FROM edinburgh_weather ew 
+                WHERE time in ('15:00','18:00')
+                GROUP BY date
+            
+            ),
+            countOfBikes AS (
+
+                SELECT LEFT(started_at,10) AS date ,SUBSTRING(started_at,12,2) AS time FROM edinburgh_bikes eb 
+                WHERE LEFT(RIGHT(started_at,8),2) IN ('15','16','17')
+            
+             ), temp_bikes AS (
+
+                SELECT COUNT(time) AS CountOfBikes, b.date, t.feel_temperature, 
+                CASE
+                    WHEN feel_temperature <=0 THEN 'cold <= 0 °c'
+                    WHEN feel_temperature <=5 AND feel_temperature > 0 THEN 'warm > 0 °c'
+                    WHEN feel_temperature >5 THEN 'hot > 5 °c'
+                END AS temperature_group 
+                FROM countOfBikes b
+                JOIN feels_temperature t
+                ON b.date=t.date
+                WHERE SUBSTRING(t.date,6,2) IN ('12','01','02')
+                GROUP BY date
+            
+            ) SELECT AVG(CountOfBikes) as AVG_CountOfBikes, temperature_group  
+            FROM temp_bikes 
+            GROUP BY temperature_group 
+        """
+
+    
+        df = pd.read_sql(sql=queryWinter,con=engeto_data_conn)
+
+
+        hist = alt.Chart(df).mark_bar().encode(
+            x = alt.X('temperature_group'),
+            y = alt.Y('AVG_CountOfBikes'),
+            tooltip = [ 'temperature_group', 'AVG_CountOfBikes' ]
+        ).configure_axis(
+            labelFontSize=14,
+            titleFontSize=16,
+            labelAngle=0
+        ).interactive()
+
+        st.altair_chart(hist, use_container_width=True)
+
+    st.markdown("<h3 style='text-align: center; color: grey;'>People usually use bikes at the summer when the feeled temperature is high. In winter people use bikes not depend on the feeled temperature. </h3>", unsafe_allow_html=True)
+        

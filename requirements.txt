@@ -72,4 +72,5 @@ SQLAlchemy
 stack-data
 streamlit
 widgetsnbextension
+geopy
 zipp

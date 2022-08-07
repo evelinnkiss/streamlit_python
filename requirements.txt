@@ -20,7 +20,7 @@ entrypoints
 executing
 fastjsonschema
 gitdb
-GitPython
+GitPythonF
 greenlet
 idna
 importlib-metadata
@@ -73,4 +73,5 @@ stack-data
 streamlit
 widgetsnbextension
 zipp
+geopy
 

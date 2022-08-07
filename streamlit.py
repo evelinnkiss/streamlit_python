@@ -262,7 +262,7 @@ elif page == '5. Bike rental time':
         WITH duration AS (
         SELECT start_station_name,end_station_name, ROUND(duration/60,0) AS duration_min, CASE 
             WHEN ROUND(duration/60,0) <=10 THEN '<=10min'
-            WHEN ROUND(duration/60,0) >10 AND ROUND(duration/60,0) <=30 THEN '<=30min'
+            WHEN ROUND(duration/60,0) >10 AND ROUND(duration/60,0) <=30 THEN '<=30min_AND_>10min'
             WHEN ROUND(duration/60,0) >30 AND  ROUND(duration/60,0) <=60 THEN '<=60min_AND_>30min'
             WHEN ROUND(duration/60,0) >60 THEN '>60min'
         END AS duration_type
@@ -314,7 +314,7 @@ elif page == 'Demand analysis':
     
 
     st.write('The most frequent time is from 12:00 to 17:00 during the DAY')
-    st.write('The lowest frequent time is from 23:00 to 06:00 during the NIGHT and EARLY MORNING')
+    st.write('The lowest frequent time is from 22:00 to 06:00 during the NIGHT and EARLY MORNING')
     st.altair_chart(hist, use_container_width=True)
 
     col1,col2 =st.columns(2)

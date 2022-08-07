@@ -20,7 +20,7 @@ entrypoints
 executing
 fastjsonschema
 gitdb
-GitPythonF
+GitPython
 greenlet
 idna
 importlib-metadata

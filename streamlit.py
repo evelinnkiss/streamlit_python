@@ -6,10 +6,12 @@ import pandas as pd
 import altair as alt
 
 
+
 st.set_page_config(layout="wide")
-page = st.sidebar.radio('Bike sharing Project', ['Active-NonActive stations', 'The Most frequent stations', 'Count of Bikes','Distances between stations','Bike rental time','Demand analysis'])
-if page == 'Active-NonActive stations':
+page = st.sidebar.radio('Bike sharing Project', ['1. Active-NonActive stations', '2. The Most frequent stations', '3. Count of Bikes ','4. Distances between stations','5. Bike rental time','Demand analysis'])
+if page == '1. Active-NonActive stations':
     st.title('Active-NonActive stations')
+    st.write('identifikujte aktivní a neaktivní stanice')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
    
@@ -89,8 +91,9 @@ if page == 'Active-NonActive stations':
 
     
    
-elif page == 'The Most frequent stations':
+elif page == '2. The Most frequent stations':
     st.title('Top 10 frequent stations')
+    st.write('identifikujte nejfrekventovanější stanice')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
     query2=""" 
@@ -128,8 +131,10 @@ elif page == 'The Most frequent stations':
 
     col2.altair_chart(chart1, use_container_width=True)
 
-elif page == 'Count of Bikes':
+elif page == '3. Count of Bikes':
     st.title('Count of Bikes at stations')
+    st.write('identifikujte stanice, na kterých se kola hromadí a stanice, kde potenciálně chybí')
+    
 
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
@@ -209,8 +214,9 @@ elif page == 'Count of Bikes':
 
 
 
-elif page == 'Distances between stations':
+elif page == '4. Distances between stations':
     st.title('Distances between stations')
+    st.write('spočítejte vzdálenosti mezi jednotlivými stanicemi')
     
     from itertools import combinations
     from geopy.distance import geodesic
@@ -245,8 +251,9 @@ elif page == 'Distances between stations':
     
 
 
-elif page == 'Bike rental time':
+elif page == '5. Bike rental time':
     st.title('Bike rental time')
+    st.write('jak dlouho trvá jedna výpůjčka? Najděte odlehlé hodnoty, zobrazte histogram')
 
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)

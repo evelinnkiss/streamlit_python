@@ -74,4 +74,3 @@ streamlit
 widgetsnbextension
 zipp
 geopy
-

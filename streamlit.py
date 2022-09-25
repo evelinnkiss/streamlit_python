@@ -8,13 +8,11 @@ import altair as alt
 
 
 st.set_page_config(layout="wide")
-page = st.sidebar.radio('Bike sharing Project', ['1. Active-NonActive stations', '2. The Most frequent stations', '3. Count of Bikes ','4. Distances between stations','5. Bike rental time','Demand analysis'])
+page = st.sidebar.radio('Bike sharing Project', ['1. Active-NonActive stations', '2. The Most frequent stations', '3. Count of Bikes','4. Distances between stations','5. Bike rental time','Demand analysis'])
 if page == '1. Active-NonActive stations':
-    st.title('Active-NonActive stations')
-    st.write('identifikujte aktivní a neaktivní stanice')
+    
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
-   
     query=""" 
        WITH bikes AS (
             SELECT DISTINCT start_station_name, 
@@ -22,7 +20,8 @@ if page == '1. Active-NonActive stations':
             countEndStation 
             FROM edinburgh_bikes a
             INNER JOIN (
-                SELECT DISTINCT end_station_name, 
+                SELECT 
+                DISTINCT end_station_name, 
                 COUNT(end_station_id)  AS countEndStation 
                 FROM edinburgh_bikes eb 
                 GROUP BY end_station_name 
@@ -30,15 +29,48 @@ if page == '1. Active-NonActive stations':
             ON a.start_station_name=b.end_station_name
             GROUP BY start_station_name 
             ORDER BY countStartStation 
-        ) SELECT start_station_name AS Station_name, (countStartStation + countEndStation ) AS CountOfUse
+        ) SELECT 
+        (countStartStation + countEndStation ) AS CountOfUse
         FROM Bikes 
-        WHERE (countStartStation + countEndStation ) < 1000
         
     """
+
     
     df = pd.read_sql(sql=query,con=engeto_data_conn)
+    df = pd.DataFrame(df) 
+    df = df.describe().round(0)
    
+
+
+    st.title('Active-NonActive stations')
+    st.write('identifikujte aktivní a neaktivní stanice')
+    st.write("25% percentil",df['CountOfUse'].iloc[4],"použití.")
    
+    query0=""" 
+       WITH bikes AS (
+            SELECT DISTINCT start_station_name, 
+            COUNT(start_station_id)  AS countStartStation,
+            countEndStation 
+            FROM edinburgh_bikes a
+            INNER JOIN (
+                SELECT 
+                DISTINCT end_station_name, 
+                COUNT(end_station_id)  AS countEndStation 
+                FROM edinburgh_bikes eb 
+                GROUP BY end_station_name 
+            ) b
+            ON a.start_station_name=b.end_station_name
+            GROUP BY start_station_name 
+            ORDER BY countStartStation 
+        ) SELECT 
+        start_station_name AS Station_name, 
+        (countStartStation + countEndStation ) AS CountOfUse
+        FROM Bikes 
+        WHERE (countStartStation + countEndStation ) <= 434
+        
+    """
+
+    df = pd.read_sql(sql=query0,con=engeto_data_conn)
 
     chart1 = alt.Chart(df).mark_bar().encode(
         x = alt.X('Station_name',sort='y'),
@@ -47,7 +79,7 @@ if page == '1. Active-NonActive stations':
     ).interactive()
 
     st.subheader ('NonActive')
-    st.write('Stations with less than 1000 times of use')
+    st.write('Stations with less than 434 times of use')
     st.altair_chart(chart1, use_container_width=True)
 
 
@@ -69,7 +101,7 @@ if page == '1. Active-NonActive stations':
             ORDER BY countStartStation 
         ) SELECT start_station_name AS Station_name, (countStartStation + countEndStation ) AS CountOfUse
         FROM Bikes 
-        WHERE (countStartStation + countEndStation ) > 1000
+        WHERE (countStartStation + countEndStation ) > 434
         
     """
     
@@ -83,7 +115,7 @@ if page == '1. Active-NonActive stations':
     ).interactive()
     
     st.subheader('Active')
-    st.write('Stations with more than 1000 times of use')
+    st.write('Stations with more than 434 times of use')
     st.altair_chart(chart2, use_container_width=True)
 
 
@@ -94,9 +126,10 @@ if page == '1. Active-NonActive stations':
 elif page == '2. The Most frequent stations':
     st.title('Top 10 frequent stations')
     st.write('identifikujte nejfrekventovanější stanice')
+    st.write('Jedná sa o 10 najpoužívanejších staníc s najvačšim počtom vypujček + vrátení kol')
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
-    query2=""" 
+    query=""" 
         WITH bikes AS (
             SELECT DISTINCT start_station_name, 
             COUNT(start_station_id)  AS countStartStation,
@@ -115,13 +148,13 @@ elif page == '2. The Most frequent stations':
 
     """
     col1,col2 = st.columns([0.25,0.75])
-    df = pd.read_sql(sql=query2,con=engeto_data_conn)
+    df = pd.read_sql(sql=query,con=engeto_data_conn)
     col1.dataframe(df,1000,300)
 
     
     chart1 = alt.Chart(df).mark_bar().encode(
-        x = 'Station_name',
-        y = 'CountOfUse',
+        x = alt.X('Station_name', sort='-y'),
+        y = alt.Y('CountOfUse'),
         tooltip = [ 'Station_name','CountOfUse' ]
     ).configure_axis(
         labelFontSize=14,
@@ -216,11 +249,14 @@ elif page == '3. Count of Bikes':
 
 elif page == '4. Distances between stations':
     st.title('Distances between stations')
-    st.write('spočítejte vzdálenosti mezi jednotlivými stanicemi')
+    st.write('Spočítejte vzdálenosti mezi jednotlivými stanicemi')
+
+    st.write('Vzdialenosť v KM medzi jednotlivými stanicami')
     
     from itertools import combinations
     from geopy.distance import geodesic
     import numpy as np
+    import matplotlib
 
   
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
@@ -245,26 +281,59 @@ elif page == '4. Distances between stations':
     coords = coords.reshape(coords.shape[0], 4)
     distances = geodesic_vec(coords[:, 0], coords[:, 1], coords[:, 2], coords[:, 3])
     combos = list(combinations(df.index, 2))
-    dist_df = pd.DataFrame(distances, index=pd.Index(combos, names=['station1', 'station2']), columns=['distance'])
-    dist_df = dist_df.join(df.rename_axis('station1')).join(df.rename_axis('station2'), rsuffix='2')
-    dist_df
+    dist_df = pd.DataFrame(distances, index=pd.Index(combos, names=['Station1', 'Station2']), columns=['distance'])
+    dist_df = dist_df.join(df.rename_axis('Station1')).join(df.rename_axis('Station2'), rsuffix='2')
+
     
+    dist_df.to_csv('your.csv', index=False)
+    df = pd.read_csv('your.csv', index_col=0)
+    df = df.reset_index()
+    df = df[['distance','station_name','station_name2']]
+    df = pd.pivot_table(df, index="station_name",
+                        columns="station_name2", 
+                        values="distance", fill_value=0)
+    df
 
 
 elif page == '5. Bike rental time':
     st.title('Bike rental time')
-    st.write('jak dlouho trvá jedna výpůjčka? Najděte odlehlé hodnoty, zobrazte histogram')
+    st.write('Jak dlouho trvá jedna výpůjčka? Najděte odlehlé hodnoty, zobrazte histogram')
+
+    st.write('Na základe dostupných dat možeme povedať, že :')
 
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
+
+
+    query2="""
+        SELECT duration
+        FROM edinburgh_bikes eb 
+    """
+
+    df = pd.read_sql(sql=query2,con=engeto_data_conn)
+    
+    df = pd.DataFrame(df) 
+
+    df = (df.describe()/60).round(1)
+    df
+
+    st.write('- Priemerna doba vypujčky je :', df['duration'].iloc[1], 'minut.')
+    st.write('- 25% percentil :', df['duration'].iloc[4], 'minut.')
+    st.write('- 50% percentil :', df['duration'].iloc[5], 'minut.')
+    st.write('- 75% percentil :', df['duration'].iloc[6], 'minut.')
+    st.write('- Variačni koeficient:', (df['duration'].iloc[2]/df['duration'].iloc[1]*100).round(0), '%.')
+    st.write('- Minimálna doba vypujčky :', df['duration'].iloc[3], 'minut.')
+    st.write('- Maximalna doba vypujčky :', df['duration'].iloc[7], 'minut.')
+
+
 
     query="""
         WITH duration AS (
         SELECT start_station_name,end_station_name, ROUND(duration/60,0) AS duration_min, CASE 
             WHEN ROUND(duration/60,0) <=10 THEN '<=10min'
-            WHEN ROUND(duration/60,0) >10 AND ROUND(duration/60,0) <=30 THEN '<=30min_AND_>10min'
-            WHEN ROUND(duration/60,0) >30 AND  ROUND(duration/60,0) <=60 THEN '<=60min_AND_>30min'
-            WHEN ROUND(duration/60,0) >60 THEN '>60min'
+            WHEN ROUND(duration/60,0) >10 AND ROUND(duration/60,0) <=19 THEN '<=19min_AND_>10min'
+            WHEN ROUND(duration/60,0) >19 AND  ROUND(duration/60,0) <=42 THEN '<=42_AND_>19min'
+            WHEN ROUND(duration/60,0) >42 THEN '>42min'
         END AS duration_type
         FROM edinburgh_bikes eb 
         )SELECT duration_type,COUNT(duration_type) as count
@@ -286,9 +355,16 @@ elif page == '5. Bike rental time':
 
     st.altair_chart(hist, use_container_width=True)
 
+
+
+    
+
+
+
+
 elif page == 'Demand analysis':
     st.title('Development of Bike rent over time')
-    
+    st.write('- zobrazte vývoj poptávky po půjčování kol v čase')
     
     student_conn_string = "mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022"
     engeto_data_conn = sqlalchemy.create_engine(student_conn_string)
@@ -317,6 +393,7 @@ elif page == 'Demand analysis':
     st.write('The lowest frequent time is from 22:00 to 06:00 during the NIGHT and EARLY MORNING')
     st.altair_chart(hist, use_container_width=True)
 
+    st.write('- půjčují si lidé kola více o víkendu než během pracovního týdne')
     col1,col2 =st.columns(2)
     with col1:
         st.title('Bike rent during the WORKING DAYS')
@@ -357,6 +434,9 @@ elif page == 'Demand analysis':
         st.write('Average count of rent per day during the weekend:', a2)
 
     st.markdown("<h3 style='text-align: center; color: grey;'>People usually use bikes during the weekend, people use bikes 8 874,7 more then during the working days</h3>", unsafe_allow_html=True)
+
+
+    st.write('- zjistěte vliv počasí na poptávku po kolech')
     col1,col2 =st.columns(2)
     with col1:
         st.title('Effect of weather on bike rent in SUMMER')

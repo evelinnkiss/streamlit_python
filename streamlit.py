@@ -541,4 +541,4 @@ elif page == 'Demand analysis':
         st.altair_chart(hist, use_container_width=True)
 
     st.markdown("<h3 style='text-align: center; color: grey;'>People usually use bikes at the summer when the feeled temperature is high. In winter people use bikes not depend on the feeled temperature. </h3>", unsafe_allow_html=True)
-       
+        

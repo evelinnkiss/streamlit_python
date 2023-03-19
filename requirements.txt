@@ -45,7 +45,7 @@ nest-asyncio
 notebook
 numpy
 packaging
-pandas
+pandas 1.5.3
 pandocfilters
 parso
 pickleshare

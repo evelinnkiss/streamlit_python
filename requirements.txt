@@ -68,7 +68,7 @@ pytz
 pytz-deprecation-shim
 smmap
 soupsieve
-SQLAlchemy==1.4.46 
+SQLAlchemy==1.4.46
 stack-data
 streamlit
 widgetsnbextension

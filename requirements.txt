@@ -52,7 +52,7 @@ pickleshare
 Pillow
 prometheus-client
 prompt-toolkit
-protobuf
+protobuf==3.20.3
 psutil
 pure-eval
 pyarrow

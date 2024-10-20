@@ -11,7 +11,7 @@ st.set_page_config(layout="wide")
 page = st.sidebar.radio('Bike sharing Project', ['1. Active-NonActive stations', '2. The Most frequent stations', '3. Count of Bikes','4. Distances between stations','5. Bike rental time','Demand analysis'])
 if page == '1. Active-NonActive stations':
     
-    engeto_data_conn = sqlalchemy.create_engine("mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_02_2022")
+    engeto_data_conn = sqlalchemy.create_engine("mysql+pymysql://student2:eh2BjVEpYmDcT96E@data.engeto.com:3306/data_academy_absolvent")
     query=""" 
        WITH bikes AS (
             SELECT DISTINCT start_station_name, 
